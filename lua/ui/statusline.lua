@@ -1,0 +1,1 @@
+-- TODO: Build the custom statusline and choose what information it displays
