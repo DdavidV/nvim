@@ -1,4 +1,14 @@
 local opt = vim.opt
+local M = {}
+
+-- Notification UI defaults
+M.ui = {
+  notification = {
+    timeout = 5000, -- default timeout for notifications in milliseconds
+    max_width = 100, -- maximum width of notification in columns
+    gap = 2, -- gap between notifications in lines
+  },
+}
 
 -- Disable welcome screen
 vim.opt.shortmess:append("I")
@@ -39,3 +49,5 @@ opt.clipboard = "unnamedplus"
 opt.fillchars = {
   eob = " ", -- Replace empty line indicator
 }
+
+return M
