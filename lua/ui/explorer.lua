@@ -229,7 +229,11 @@ local function open_node(node)
   state.editor_window = editor_window
   local bufnr = vim.fn.bufadd(path)
   vim.fn.bufload(bufnr)
+  -- Make explorer-opened files participate in the editor's persistent tabline.
+  vim.bo[bufnr].buflisted = true
   vim.api.nvim_win_set_buf(editor_window, bufnr)
+  require("ui.tabs").track(editor_window, bufnr)
+  require("ui.tabs").update_window_ui(editor_window)
 end
 
 local function click_node()
@@ -304,6 +308,13 @@ local function create_buffer()
   map("R", render, "Refresh explorer")
   map("q", M.close, "Close explorer")
   map("<LeftRelease>", click_node, "Open or toggle clicked entry")
+  local function prevent_split()
+    vim.notify("The explorer cannot be split.", vim.log.levels.INFO)
+  end
+  map("<C-w>s", prevent_split, "Prevent splitting the explorer")
+  map("<C-w>v", prevent_split, "Prevent splitting the explorer")
+  map("<C-w><C-s>", prevent_split, "Prevent splitting the explorer")
+  map("<C-w><C-v>", prevent_split, "Prevent splitting the explorer")
 end
 
 function M.open()
@@ -374,6 +385,27 @@ function M.setup(options)
   )
 
   local group = vim.api.nvim_create_augroup("HandRolledExplorer", { clear = true })
+  vim.api.nvim_create_autocmd("WinNew", {
+    group = group,
+    callback = function()
+      local new_window = vim.api.nvim_get_current_win()
+      vim.schedule(function()
+        local explorer_window = state.window
+        if not explorer_window or explorer_window == new_window
+            or not vim.api.nvim_win_is_valid(explorer_window)
+            or not vim.api.nvim_win_is_valid(new_window)
+            or vim.bo[vim.api.nvim_win_get_buf(new_window)].filetype ~= "native-explorer" then
+          return
+        end
+
+        if vim.api.nvim_get_current_win() == new_window then
+          vim.api.nvim_set_current_win(explorer_window)
+        end
+        vim.api.nvim_win_close(new_window, true)
+        vim.notify("The explorer cannot be split.", vim.log.levels.INFO)
+      end)
+    end,
+  })
   vim.api.nvim_create_autocmd("WinEnter", {
     group = group,
     callback = function()

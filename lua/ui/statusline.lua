@@ -90,6 +90,11 @@ end
 function M.render()
   local winid = current_window()
   local bufnr = vim.api.nvim_win_get_buf(winid)
+  if vim.b[bufnr].handrolled_empty_editor
+      or vim.b[bufnr].handrolled_tab_placeholder then
+    return ""
+  end
+
   local mode = vim.api.nvim_get_mode().mode
   local mode_name = mode_names[mode] or mode_names[mode:sub(1, 1)] or "NORMAL"
   local cursor = vim.api.nvim_win_get_cursor(winid)

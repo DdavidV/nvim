@@ -80,7 +80,10 @@ function M.apply()
     VertSplit = { fg = p.selection },
     TabLine = { fg = p.muted, bg = p.surface },
     TabLineSel = { fg = p.foreground, bg = p.background, bold = true },
-    TabLineFill = { bg = p.surface },
+    TabLineClose = { fg = p.muted, bg = p.surface },
+    TabLineCloseSel = { fg = p.muted, bg = p.background },
+    WinBar = { fg = p.muted, bg = p.surface },
+    WinBarNC = { fg = p.muted, bg = p.surface },
     Folded = { fg = p.accent, bg = p.surface },
     FoldColumn = { fg = p.muted, bg = p.background },
 
