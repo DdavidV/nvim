@@ -1,12 +1,20 @@
 local opt = vim.opt
 local M = {}
 
+-- Use the hand-rolled explorer instead of Neovim's bundled netrw browser.
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
 -- Notification UI defaults
 M.ui = {
   notification = {
     timeout = 5000, -- default timeout for notifications in milliseconds
     max_width = 100, -- maximum width of notification in columns
     gap = 2, -- gap between notifications in lines
+  },
+  explorer = {
+    min_width = 12, -- close the explorer when it is resized to this width or narrower
+    resize_delay = 1000, -- wait this many milliseconds after resizing before closing
   },
 }
 
@@ -15,6 +23,9 @@ vim.opt.shortmess:append("I")
 
 -- Enable 24-bit color support in the terminal
 opt.termguicolors = true
+
+-- Enable mouse interaction so vertical split separators can be dragged to resize.
+opt.mouse = "a"
 
 -- Show the current line number
 opt.number = true

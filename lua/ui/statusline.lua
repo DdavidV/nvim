@@ -132,7 +132,8 @@ function M.render()
 end
 
 function M.setup()
-  vim.o.laststatus = 2
+  -- One global statusline avoids drawing a separate statusline in the explorer split.
+  vim.o.laststatus = 3
   vim.o.statusline = "%!v:lua.require'ui.statusline'.render()"
 
   -- Repository changes can happen while Neovim is open, so refresh cached branches
