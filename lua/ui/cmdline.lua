@@ -316,10 +316,17 @@ function M.setup()
   vim.opt.cmdheight = 0
   vim.opt.wildmenu = true
   vim.opt.wildoptions = "pum"
-  vim.opt.wildmode = "full"
+  vim.opt.wildmode = "noselect:lastused,full"
   attach()
 
   local group = vim.api.nvim_create_augroup("NativeCmdlinePopup", { clear = true })
+  vim.api.nvim_create_autocmd("CmdlineChanged", {
+    group = group,
+    pattern = { ":", "/", "?" },
+    callback = function()
+      vim.fn.wildtrigger()
+    end,
+  })
   vim.api.nvim_create_autocmd("VimResized", {
     group = group,
     callback = schedule_update,
