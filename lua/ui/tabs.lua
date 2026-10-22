@@ -76,6 +76,10 @@ local function editor_window(preferred)
   end
 end
 
+function M.get_editor_window()
+  return editor_window()
+end
+
 local function window_state(winid)
   local entry = state.windows[winid]
   if not entry then
@@ -416,7 +420,8 @@ function M.track(winid, bufnr)
 end
 
 function M.update_window_ui(winid)
-  if not vim.api.nvim_win_is_valid(winid) then
+  if not vim.api.nvim_win_is_valid(winid)
+      or vim.api.nvim_win_get_config(winid).relative ~= "" then
     return
   end
 

@@ -1,5 +1,4 @@
 local M = {}
-local icons = require("utils.icons")
 
 local config = {
   width = 30,
@@ -77,18 +76,18 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
   local expanded = directory and state.expanded[path]
   local prefix = {}
   for _, ancestor_is_last_entry in ipairs(ancestor_is_last) do
-    prefix[#prefix + 1] = ancestor_is_last_entry and "    " or "│   "
+    prefix[#prefix + 1] = ancestor_is_last_entry and "  " or "│ "
   end
-  prefix[#prefix + 1] = is_last and "└── " or "├── "
+  prefix[#prefix + 1] = is_last and "└─ " or "├─ "
 
-  local icon
+  local icon, icon_highlight
   if directory then
-    icon = icons.get_directory(name, expanded)
+    icon, icon_highlight = MiniIcons.get("directory", path)
   else
-    icon = icons.get_file(name)
+    icon, icon_highlight = MiniIcons.get("file", path)
   end
   local connector = table.concat(prefix)
-  lines[#lines + 1] = connector .. icon.glyph .. " " .. name
+  lines[#lines + 1] = connector .. icon .. " " .. name
   -- Map each rendered row back to its filesystem entry for keyboard and mouse actions.
   state.nodes[#lines] = { path = path, directory = directory }
   highlights[#highlights + 1] = {
@@ -102,10 +101,10 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
     end_col = #connector,
   }
   highlights[#highlights + 1] = {
-    group = icon.highlight,
+    group = icon_highlight,
     line = #lines - 1,
     start_col = #connector,
-    end_col = #connector + #icon.glyph,
+    end_col = #connector + #icon,
   }
 
   if not expanded then
@@ -144,14 +143,14 @@ local function render()
   state.nodes = {}
   vim.api.nvim_buf_clear_namespace(state.buffer, namespace, 0, -1)
   local root_name = vim.fs.basename(state.root)
-  local root_icon = icons.get_directory(root_name, true)
-  local lines = { root_icon.glyph .. " " .. root_name }
+  local root_icon, root_icon_highlight = MiniIcons.get("directory", state.root)
+  local lines = { root_icon .. " " .. root_name }
   local highlights = { { group = "ExplorerRoot", line = 0 } }
   highlights[#highlights + 1] = {
-    group = root_icon.highlight,
+    group = root_icon_highlight,
     line = 0,
     start_col = 0,
-    end_col = #root_icon.glyph,
+    end_col = #root_icon,
   }
   local entries = directory_entries(state.root)
   if entries then
@@ -394,6 +393,7 @@ function M.setup(options)
         if not explorer_window or explorer_window == new_window
             or not vim.api.nvim_win_is_valid(explorer_window)
             or not vim.api.nvim_win_is_valid(new_window)
+            or vim.api.nvim_win_get_config(new_window).relative ~= ""
             or vim.bo[vim.api.nvim_win_get_buf(new_window)].filetype ~= "native-explorer" then
           return
         end
@@ -412,7 +412,8 @@ function M.setup(options)
       local winid = vim.api.nvim_get_current_win()
       local bufnr = vim.api.nvim_win_get_buf(winid)
       -- Track the last non-explorer window as the destination for opened files.
-      if vim.bo[bufnr].filetype ~= "native-explorer" then
+      if vim.api.nvim_win_get_config(winid).relative == ""
+          and vim.bo[bufnr].filetype ~= "native-explorer" then
         state.editor_window = winid
       end
     end,
