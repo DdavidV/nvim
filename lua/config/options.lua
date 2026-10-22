@@ -26,6 +26,9 @@ opt.termguicolors = true
 
 -- Enable mouse interaction so vertical split separators can be dragged to resize.
 opt.mouse = "a"
+-- Use smaller wheel increments and smooth scrolling for wrapped lines.
+opt.mousescroll = "ver:1,hor:1"
+opt.smoothscroll = true
 
 -- Show the current line number
 opt.number = true
