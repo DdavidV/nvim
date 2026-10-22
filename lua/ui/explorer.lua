@@ -427,6 +427,13 @@ function M.setup(options)
         if is_directory(path) then
           -- Replace the default directory-buffer behavior with the custom explorer.
           vim.cmd.cd(vim.fn.fnameescape(path))
+          local directory_buffer = vim.api.nvim_get_current_buf()
+          if is_directory(vim.api.nvim_buf_get_name(directory_buffer)) then
+            vim.cmd.enew()
+            if vim.api.nvim_buf_is_valid(directory_buffer) then
+              vim.api.nvim_buf_delete(directory_buffer, { force = false })
+            end
+          end
           M.open()
           return
         end
