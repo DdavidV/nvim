@@ -5,21 +5,19 @@ built-in Neovim functionality. Plugins are kept to a minimum and are used only
 where they provide useful functionality that would otherwise be costly to
 recreate.
 
-## Principles
+## Requirements
 
-- **Hand-rolled UI:** The file explorer, editor tabs, statusline, command line,
-  notifications, and theme are implemented in this config using Neovim's APIs.
-- **Nerd Font icons:** Use a Nerd Font in your terminal for the file and folder
-  icons to display correctly. JetBrainsMono Nerd Font Mono is a good option.
+- **Neovim 0.12.6**  the version this configuration currently runs on.
+- **Nerd Font** required to display file and folder icons. JetBrainsMono Nerd
+  Font Mono is one option.
+- **ripgrep** (`rg`) required by Telescope's `live_grep`.
 
 ## Plugins
 
 Plugin usage is kept minimal and managed with lazy.nvim:
 
 - **lazy.nvim** — installs and manages the configured plugins.
-- **Telescope** — fuzzy finding and search, with file previews. `<leader>ff`
-  finds files, `<leader>fg` searches file contents, `<leader>fb` finds open
-  buffers, and `<leader>fh` searches help tags.
+- **Telescope** — fuzzy finding and search, with file previews. 
 - **mini.icons** — provides file and folder icons for the custom explorer.
 - **plenary.nvim** — a dependency required by Telescope.
 
