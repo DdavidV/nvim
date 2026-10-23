@@ -1,0 +1,12 @@
+{application, nvim_rpc, [
+  {description, "MessagePack-RPC integration for Neovim"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib
+  ]},
+  {env, []},
+  {modules, []},
+  {links, []}
+]}.
