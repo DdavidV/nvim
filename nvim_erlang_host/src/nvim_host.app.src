@@ -1,0 +1,14 @@
+{application, nvim_host, [
+    {description, "An OTP application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {nvim_host_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        nvim_rpc
+    ]},
+    {env, []},
+    {modules, []},
+    {links, []}
+]}.

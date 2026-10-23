@@ -27,7 +27,8 @@ Plugin usage is kept minimal and managed with lazy.nvim:
 .
 ├── init.lua
 ├── lazy-lock.json
-├── nvim_rpc/         # Erlang/OTP MessagePack-RPC library (Rebar3)
+├── nvim_erlang_rpc/         # Erlang/OTP MessagePack-RPC library (Rebar3)
+├── nvim_erlang_host/        # Erlang/OTP extension host app (Rebar3, depends on nvim_rpc)
 └── lua/
     ├── config/       # Options, keymaps, theme, and lazy.nvim bootstrap
     ├── event/        # Event and notification handling
