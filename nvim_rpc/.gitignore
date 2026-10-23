@@ -1,5 +1,7 @@
 .rebar3
 _build
+.nvim_api/
+*.generated.erl
 _checkouts
 _vendor
 .eunit
