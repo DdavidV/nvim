@@ -1,5 +1,6 @@
 local options = require("config.options")
 require("config.lazy")
+require("config.beam").setup(options.beam)
 
 require("config.keymaps")
 

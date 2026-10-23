@@ -32,6 +32,30 @@ application:set_env(nvim_host, nvim_executable, "/path/to/nvim").
 application:ensure_all_started(nvim_host).
 ```
 
+The Neovim bootstrap sets `nvim_host.scripts_dir` with
+`application:set_env/2` before starting the host. At application start, the
+host loads every `.beam` file from that directory's `ebin/` subdirectory and
+invokes `run/0` on modules that export it. The bootstrap compiles `.erl` files
+from the configured scripts directory before starting the application.
+
+The local Neovim integration uses `rebar3 compile` and launches the Erlang
+application as a foreground RPC job; a Rebar3 release is unnecessary for this
+development workflow.
+
+After all configured extensions start, the host shows a Neovim INFO
+notification through the generated `nvim_notify` API and emits Neovim's
+`User ErlangHostStarted` event through `nvim_exec_lua`. The event can be
+observed or customized with a Lua autocmd:
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = "ErlangHostStarted",
+  callback = function()
+    vim.notify("My Erlang extensions are ready")
+  end,
+})
+```
+
 Send a request to Neovim; calls default to a five-second timeout:
 
 ```erlang
@@ -54,6 +78,28 @@ then uses that binding to encode the request:
 An unavailable function returns `{error, {api_not_available, Function, Arity}}` without sending an
 RPC request. Use `nvim:call` for generic or custom RPC methods that are not present in the
 generated bindings.
+
+Neovim user-command callbacks execute in Neovim's Lua runtime and cannot directly
+hold an Erlang function. Use `nvim:create_user_command/3` to bridge them: it
+creates the command with a Lua callback that forwards command options to an
+Erlang handler over RPC.
+
+```erlang
+Options = #{
+    {string, <<"desc">>} => {string, <<"Describe the command">>},
+    {string, <<"force">>} => true
+},
+ok = nvim:create_user_command(<<"MyCommand">>, fun(CommandOptions) ->
+    logger:info("Command invoked with options: ~p", [CommandOptions]),
+    ok
+end, Options).
+```
+
+Use MessagePack string tuples for option keys and string values, as shown;
+the RPC encoder does not automatically convert arbitrary Erlang atoms.
+
+The handler receives Neovim's command options map asynchronously; its return
+value is not sent back to the user-command callback.
 
 Register an Erlang handler for a request or notification received from Neovim:
 

@@ -8,6 +8,7 @@
 
 %% Generated API functions
 -export([
+    api/1,
     api/2,
     api/3
 ]).
@@ -22,7 +23,8 @@
 %% Asynchronous RPC calls
 -export([
     cast/1,
-    cast/2
+    cast/2,
+    create_user_command/3
 ]).
 
 %% Handler registration
@@ -30,6 +32,12 @@
     register_handler/2,
     unregister_handler/1
 ]).
+
+-spec api(Function) -> Result when
+    Function :: atom(),
+    Result :: {ok, term()} | {error, term()}.
+api(Function) ->
+    api(Function, []).
 
 -spec api(Function, Params) -> Result when
     Function :: atom(),
@@ -96,6 +104,25 @@ cast(Method, Params) when is_list(Params) ->
 cast(_, _) ->
     {error, invalid_cast_arguments}.
 
+-spec create_user_command(Name, Handler, Options) -> Result when
+    Name :: binary(),
+    Handler :: fun(([map()]) -> term()),
+    Options :: map(),
+    Result :: ok | {error, term()}.
+create_user_command(Name, Handler, Options) when
+    is_binary(Name) andalso is_function(Handler, 1) andalso is_map(Options)
+->
+    case api(nvim_get_api_info, []) of
+        {ok, [ChannelId, _Metadata]} when is_integer(ChannelId) ->
+            create_user_command_with_channel(Name, Handler, Options, ChannelId);
+        {ok, Response} ->
+            {error, {invalid_api_info_response, Response}};
+        {error, Reason} ->
+            {error, {api_info_failed, Reason}}
+    end;
+create_user_command(_, _, _) ->
+    {error, invalid_user_command_arguments}.
+
 -spec register_handler(Method, Handler) -> Result when
     Method :: nvim_rpc:rpc_method(),
     Handler :: handler(),
@@ -110,6 +137,44 @@ register_handler(_, _) ->
     Result :: ok | {error, term()}.
 unregister_handler(Method) ->
     server_call({unregister_handler, Method}).
+
+create_user_command_with_channel(Name, Handler, Options, ChannelId) ->
+    Method =
+        <<"nvim_erlang_user_command:",
+            (integer_to_binary(
+                erlang:unique_integer([positive, monotonic])
+            ))/binary>>,
+    case register_handler(Method, fun([CommandOptions]) -> Handler(CommandOptions) end) of
+        ok ->
+            create_remote_user_command(Name, Method, Options, ChannelId);
+        {error, Reason} ->
+            {error, {user_command_handler_registration_failed, Reason}}
+    end.
+
+create_remote_user_command(Name, Method, Options, ChannelId) ->
+    Code =
+        {string, <<
+            "local name, method, channel, options = ...; "
+            "vim.api.nvim_create_user_command(name, function(command_options) "
+            "vim.rpcnotify(channel, method, command_options) "
+            "end, options)"
+        >>},
+    Args = [
+        {string, Name},
+        {string, Method},
+        ChannelId,
+        Options
+    ],
+    case api(nvim_exec_lua, [Code, Args]) of
+        {ok, nil} ->
+            ok;
+        {error, Reason} ->
+            _ = unregister_handler(Method),
+            {error, {user_command_creation_failed, Reason}};
+        Unexpected ->
+            _ = unregister_handler(Method),
+            {error, {unexpected_user_command_response, Unexpected}}
+    end.
 
 server_call(Request) ->
     case whereis(nvim_host_connection) of

@@ -18,6 +18,11 @@ M.ui = {
   },
 }
 
+-- Erlang host config
+M.beam = {
+  scripts_dir = vim.fn.stdpath("config") .. "/erlang",
+}
+
 -- Disable welcome screen
 vim.opt.shortmess:append("I")
 

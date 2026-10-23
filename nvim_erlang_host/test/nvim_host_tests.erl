@@ -28,6 +28,29 @@ generated_api_test_() ->
                 ]}
     end.
 
+loads_and_starts_compiled_extensions_test() ->
+    ExtensionDirectory = socket_path() ++ ".extensions",
+    ok = file:make_dir(ExtensionDirectory),
+    SourceBeam = code:which(nvim_host_extension_fixture),
+    TargetBeam = filename:join(
+        ExtensionDirectory,
+        atom_to_list(nvim_host_extension_fixture) ++ ".beam"
+    ),
+    {ok, _BytesCopied} = file:copy(SourceBeam, TargetBeam),
+    persistent_term:put(nvim_host_extension_test_pid, self()),
+    try
+        ?assertEqual(ok, nvim_host_extensions:run(ExtensionDirectory)),
+        receive
+            {extension_started, nvim_host_extension_fixture} -> ok
+        after 1000 ->
+            ?assert(false)
+        end
+    after
+        persistent_term:erase(nvim_host_extension_test_pid),
+        ok = file:delete(TargetBeam),
+        ok = file:del_dir(ExtensionDirectory)
+    end.
+
 uses_generated_api_bindings({_Server, Socket, _Path}) ->
     ?assertEqual(
         {error, {api_not_available, nvim_missing_method, 1}},

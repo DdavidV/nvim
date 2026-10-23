@@ -23,9 +23,43 @@ start(_StartType, _StartArgs) ->
 start_host(Transport) ->
     case ensure_configured_api_bindings() of
         ok ->
-            nvim_host_sup:start_link(Transport);
+            start_host_and_extensions(Transport);
         {error, Reason} ->
             {error, {nvim_api_bindings_failed, Reason}}
+    end.
+
+start_host_and_extensions(Transport) ->
+    case nvim_host_sup:start_link(Transport) of
+        {ok, Supervisor} ->
+            case start_extensions() of
+                ok ->
+                    notify_started(),
+                    {ok, Supervisor};
+                {error, Reason} ->
+                    unlink(Supervisor),
+                    exit(Supervisor, shutdown),
+                    {error, {extensions_start_failed, Reason}}
+            end;
+        Error ->
+            Error
+    end.
+
+notify_started() ->
+    Message = {string, <<"Started Neovim Beam host">>},
+    Options = #{{string, <<"title">>} => {string, <<"BEAM Host">>}},
+    case nvim:api(nvim_notify, [Message, 2, Options]) of
+        {ok, NotificationId} when is_integer(NotificationId) ->
+            ok;
+        {error, Reason} ->
+            logger:warning("Could not show Neovim host-started notification: ~p", [Reason])
+    end.
+
+start_extensions() ->
+    case application:get_env(nvim_host, scripts_dir) of
+        {ok, ScriptsDirectory} ->
+            nvim_host_extensions:run(filename:join(ScriptsDirectory, "ebin"));
+        undefined ->
+            ok
     end.
 
 -spec stop(State) -> Result when
