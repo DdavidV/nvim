@@ -1,14 +1,19 @@
 {application, nvim_host, [
-    {description, "An OTP application"},
+    {description, "Neovim Erlang extension host"},
     {vsn, "0.1.0"},
-    {registered, []},
+    {registered, [
+        nvim_host_sup,
+        nvim_host_connection
+    ]},
     {mod, {nvim_host_app, []}},
     {applications, [
         kernel,
         stdlib,
         nvim_rpc
     ]},
-    {env, []},
+    {env, [
+        {transport, stdio}
+    ]},
     {modules, []},
     {links, []}
 ]}.

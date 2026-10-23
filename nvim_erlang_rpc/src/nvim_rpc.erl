@@ -7,7 +7,11 @@
     | {notification, rpc_method(), [term()]}
     | {response, rpc_request_id(), term(), term()}.
 
--export_type([rpc_message/0, rpc_request_id/0]).
+-export_type([
+    rpc_request_id/0,
+    rpc_method/0,
+    rpc_message/0
+]).
 
 -export([
     ensure_api_bindings/0,
