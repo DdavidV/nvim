@@ -228,4 +228,41 @@ function M.reload()
   end, 100)
 end
 
+function M.call(module, function_name, args)
+  assert(type(module) == "string", "module must be a string")
+  assert(type(function_name) == "string", "function_name must be a string")
+  assert(args == nil or type(args) == "table", "args must be a table")
+
+  if not M.job_id or vim.fn.jobwait({ M.job_id }, 0)[1] ~= -1 then
+    error("BEAM host is not running", 2)
+  end
+
+  local ok, result = pcall(
+    vim.fn.rpcrequest,
+    M.job_id,
+    "beam.call",
+    module,
+    function_name,
+    args or {}
+  )
+
+  if not ok then
+    error("BEAM RPC call failed: " .. tostring(result), 2)
+  end
+
+  return result
+end
+
+function M.module(module_name)
+  assert(type(module_name) == "string", "module_name must be a string")
+
+  return setmetatable({}, {
+    __index = function(_, function_name)
+      return function(...)
+        return M.call(module_name, function_name, { ... })
+      end
+    end,
+  })
+end
+
 return M

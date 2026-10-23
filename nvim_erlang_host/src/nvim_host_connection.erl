@@ -37,7 +37,13 @@ start_link(Transport) ->
 init([Transport]) ->
     case nvim_host_transport:start_link(self(), Transport) of
         {ok, TransportPid} ->
-            {ok, #state{transport = TransportPid}};
+            Handlers = #{
+                <<"beam.call">> => fun nvim_host_beam:handle_call/1
+            },
+            {ok, #state{
+                transport = TransportPid,
+                handlers = Handlers
+            }};
         {error, Reason} ->
             {stop, {transport_start_failed, Reason}}
     end.

@@ -8,22 +8,23 @@
 
 run() ->
     Options = #{
-        {string, ~"desc"} => {string, ~"Evaluate an Erlang expression"},
-        {string, ~"nargs"} => {string, ~"+"}
+        ~"desc" => ~"Evaluate an Erlang expression",
+        ~"nargs" => ~"+"
     },
-    nvim:create_user_command(~"Erlang", fun command/1, Options).
+    nvim:create_user_command(~"Erlang", fun command/1, nvim_rpc:erlang_to_rpc(Options)).
 
 command(CommandOptions) ->
-    case maps:get({string, ~"args"}, CommandOptions, undefined) of
-        {string, Args} ->
+    Options = nvim_rpc:rpc_to_erlang(CommandOptions),
+    case maps:get(~"args", Options, undefined) of
+        undefined ->
+            notify(<<"Could not read Erlang command arguments">>, ?Error);
+        Args ->
             case eval(Args) of
                 {ok, Value} ->
                     notify(format_value(Value), ?INFO);
                 {error, Reason} ->
                     notify(format_error(Reason), ?Error)
-            end;
-        undefined ->
-            notify(<<"Could not read Erlang command arguments">>, ?Error)
+            end
     end.
 
 eval(Expression) when is_binary(Expression) ->
@@ -69,8 +70,8 @@ format_error({eval, Class, Reason, _Stacktrace}) ->
 
 notify(Message, Level) ->
     Options = #{
-        {string, ~"title"} => {string, ~"Erlang"},
-        {string, ~"timeout"} => 5000
+        ~"title" => ~"Erlang",
+        ~"timeout" => 5000
     },
-    nvim:api(nvim_notify, [{string, Message}, Level, Options]),
+    nvim:api(nvim_notify, [{string, Message}, Level, nvim_rpc:erlang_to_rpc(Options)]),
     ok.

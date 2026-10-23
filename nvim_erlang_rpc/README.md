@@ -10,6 +10,42 @@ Use `{ext, Type, Payload}` for extension values such as Neovim handles.
 `decode/1` returns the decoded value and any unconsumed bytes, or `{error, incomplete}` when
 it needs more input.
 
+## Datatypes
+
+### LUA -> ERLANG
+
+| Lua value                              | MessagePack type                    | Erlang value after `nvim_rpc:decode/1`           |
+| -------------------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `nil`\*                                | nil                                 | `nil`                                            |
+| `vim.NIL`                              | nil                                 | `nil`                                            |
+| `true`                                 | Boolean                             | `true`                                           |
+| `false`                                | Boolean                             | `false`                                          |
+| `42`                                   | Integer                             | `42`                                             |
+| `3.14`                                 | Float                               | `3.14`                                           |
+| `"hello"`                              | String                              | `{string, <<"hello">>}`                          |
+| `"\0\1"` as a string                   | String                              | `{string, <<0, 1>>}` if valid UTF-8              |
+| `{1, 2, 3}` as a Lua array             | Array                               | `[1, 2, 3]`                                      |
+| `{ name = "Joe" }` as a Lua dictionary | Map                                 | `#{{string, <<"name">>} => {string, <<"Joe">>}}` |
+| Empty Lua table `{}`                   | Array or map, depending on encoding | `[]` or `#{}`                                    |
+
+### ERLANG -> LUA
+
+| Erlang value                 | RPC representation                               | Lua value                    |
+| ---------------------------- | ------------------------------------------------ | ---------------------------- |
+| `undefined`                  | `nil`                                            | `vim.NIL`                    |
+| `nil`                        | `nil`                                            | `vim.NIL`                    |
+| `true`                       | `true`                                           | `true`                       |
+| `false`                      | `false`                                          | `false`                      |
+| `42`                         | `42`                                             | `42`                         |
+| `3.14`                       | `3.14`                                           | `3.14`                       |
+| `hello` (atom)               | `{string, <<"hello">>}`                          | `"hello"`                    |
+| `<<"hello">>` (binary)       | `{string, <<"hello">>}`                          | `"hello"`                    |
+| `{binary, <<0, 1>>}`         | `<<0, 1>>` (MessagePack binary)                  | Binary string                |
+| `[1, 2, 3]` (list)           | `[1, 2, 3]` (array)                              | `{1, 2, 3}`                  |
+| `{ok, 42}` (tuple)           | `[{string, <<"ok">>}, 42]` (array)               | `{"ok", 42}`                 |
+| `#{name => <<"Joe">>}` (map) | `#{{string, <<"name">>} => {string, <<"Joe">>}}` | `{name = "Joe"}`             |
+| `#{}` (empty map)            | Empty map                                        | Empty Lua table (dictionary) |
+
 ## API bindings
 
 Bindings are generated from the output of `nvim --api-info`.
