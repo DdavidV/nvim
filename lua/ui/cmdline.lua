@@ -313,9 +313,14 @@ end
 
 -- Configure native command-line options and refresh float positions on resize.
 function M.setup()
+  -- hide the command line area when idle
   vim.opt.cmdheight = 0
+  -- enable menu-style command-line completion
   vim.opt.wildmenu = true
+  -- use a popup menu for completion
   vim.opt.wildoptions = "pum"
+  -- "noselect:lastused" = don't auto-select the first match, keep the last used one
+  -- "full" = show all possible matches and complete as much as possible
   vim.opt.wildmode = "noselect:lastused,full"
   attach()
 
