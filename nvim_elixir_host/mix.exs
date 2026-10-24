@@ -7,6 +7,7 @@ defmodule NvimHost.MixProject do
       version: "0.1.0",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
+      compilers: Mix.compilers() ++ [:nvim_api],
       deps: deps()
     ]
   end

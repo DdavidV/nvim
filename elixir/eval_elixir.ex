@@ -1,6 +1,5 @@
 defmodule EvalElixir do
   @moduledoc false
-require Logger
 
   @info 2
   @error 4
@@ -75,7 +74,7 @@ require Logger
       "timeout" => 5000
     }
 
-    Nvim.api(:nvim_notify, [message, level, options])
+    Nvim.API.nvim_notify(message, level, options)
     :ok
   end
 end

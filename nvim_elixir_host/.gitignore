@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 nvim_host-*.tar
 
+## Generated file
+lib/nvim/api.ex
