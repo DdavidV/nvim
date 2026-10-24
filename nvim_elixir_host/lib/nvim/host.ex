@@ -10,7 +10,7 @@ defmodule Nvim.Host do
     case Nvim.Transport.start_link(self()) do
       {:ok, pid} ->
         spawn(&notify_started/0)
-        {:ok, %State{transport: pid, handlers: %{"elixir.call" => &Nvim.Host.Eval.call/1}}}
+        {:ok, %State{transport: pid, handlers: %{"elixir.call" => &Nvim.Elixir.Eval.call/1}}}
 
       {:error, reason} ->
         {:error, {:transport_start, reason}}
@@ -242,6 +242,9 @@ defmodule Nvim.Host do
 
       {:error, reason} ->
         send_response(request_id, reason, nil, state)
+
+      result ->
+        send_response(request_id, nil, result, state)
     end
   end
 
