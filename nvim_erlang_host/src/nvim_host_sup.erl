@@ -4,25 +4,18 @@
 
 -export([
     start_link/0,
-    start_link/1,
     init/1
 ]).
 
 -spec start_link() -> Result when
     Result :: supervisor:startlink_ret().
 start_link() ->
-    start_link(application:get_env(nvim_host, transport, stdio)).
-
--spec start_link(Transport) -> Result when
-    Transport :: nvim_host_transport:transport(),
-    Result :: supervisor:startlink_ret().
-start_link(Transport) ->
-    supervisor:start_link({local, ?MODULE}, ?MODULE, [Transport]).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 -spec init(Args) -> Result when
     Args :: term(),
     Result :: {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
-init([Transport]) ->
+init(_Args) ->
     SupFlags = #{
         strategy => one_for_one,
         intensity => 5,
@@ -31,7 +24,7 @@ init([Transport]) ->
     ChildSpecs = [
         #{
             id => nvim_host_connection,
-            start => {nvim_host_connection, start_link, [Transport]},
+            start => {nvim_host_connection, start_link, []},
             restart => transient,
             shutdown => 5000,
             type => worker,

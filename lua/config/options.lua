@@ -19,7 +19,7 @@ M.ui = {
 }
 
 -- Erlang host config
-M.beam = {
+M.erlang = {
   scripts_dir = vim.fn.stdpath("config") .. "/erlang",
 }
 

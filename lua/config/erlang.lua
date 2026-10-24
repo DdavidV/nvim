@@ -63,7 +63,7 @@ local function compile_scripts(scripts_dir, ebin_dir, host_beam_dir)
     "-o",
     ebin_dir,
     "-pa",
-    host_beam_dir .. "/nvim_host/ebin",
+    host_beam_dir .. "/nvim_erlang_host/ebin",
     "-pa",
     host_beam_dir .. "/nvim_rpc/ebin",
   }
@@ -87,13 +87,13 @@ local function start_host(host_dir, beam_dir, scripts_dir, scripts_ebin)
   -- Set the scripts_dir before starting the host
   local eval = string.format([[
     ok = application:set_env([
-          {nvim_host, [{scripts_dir, %s}]}
+          {nvim_erlang_host, [{scripts_dir, %s}]}
       ]),
-    case application:ensure_all_started(nvim_host) of
+    case application:ensure_all_started(nvim_erlang_host) of
         {ok, _StartedApplications} ->
             ok;
         {error, StartError} ->
-            io:format(standard_error, "Could not start nvim_host: ~p~n", [StartError]),
+            io:format(standard_error, "Could not start nvim_erlang_host: ~p~n", [StartError]),
             halt(1)
     end,
     receive after infinity -> ok end.
@@ -104,7 +104,7 @@ local function start_host(host_dir, beam_dir, scripts_dir, scripts_ebin)
     "-noshell",
     "-noinput",
     "-pa",
-    beam_dir .. "/nvim_host/ebin",
+    beam_dir .. "/nvim_erlang_host/ebin",
     "-pa",
     beam_dir .. "/nvim_rpc/ebin",
     "-pa",
@@ -145,7 +145,7 @@ end
 
 local function build_host(host_dir, force)
   local beam_dir = host_dir .. "/_build/default/lib"
-  local host_beam = beam_dir .. "/nvim_host/ebin/nvim_host.beam"
+  local host_beam = beam_dir .. "/nvim_erlang_host/ebin/nvim_erlang_host.beam"
   local rpc_beam = beam_dir .. "/nvim_rpc/ebin/nvim_rpc.beam"
 
   if force or vim.fn.filereadable(host_beam) ~= 1 or vim.fn.filereadable(rpc_beam) ~= 1 then
@@ -240,14 +240,14 @@ function M.call(module, function_name, args)
   local ok, result = pcall(
     vim.fn.rpcrequest,
     M.job_id,
-    "beam.call",
+    "erlang.call",
     module,
     function_name,
     args or {}
   )
 
   if not ok then
-    error("BEAM RPC call failed: " .. tostring(result), 2)
+    error("Erlang RPC call failed: " .. tostring(result), 2)
   end
 
   return result

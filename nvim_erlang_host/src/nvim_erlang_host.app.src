@@ -1,4 +1,4 @@
-{application, nvim_host, [
+{application, nvim_erlang_host, [
     {description, "Neovim Erlang extension host"},
     {vsn, "0.1.0"},
     {registered, [
@@ -10,9 +10,6 @@
         kernel,
         stdlib,
         nvim_rpc
-    ]},
-    {env, [
-        {transport, stdio}
     ]},
     {modules, []},
     {links, []}

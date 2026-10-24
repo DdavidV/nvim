@@ -1,6 +1,6 @@
 local options = require("config.options")
 require("config.lazy")
--- require("config.beam").setup(options.beam)
+require("config.erlang").setup(options.erlang)
 require("config.elixir").setup(options.elixir)
 
 require("config.keymaps")
@@ -15,8 +15,14 @@ require("ui.explorer").setup(options.ui.explorer)
 require("ui.tabs").setup()
 
 -- Just of testing
-local List = require("config.elixir").module("List")
+local List = require("config.elixir").module("Elixir.List")
 
 local result = List.last({ 1, 2, 3 })
 
 vim.notify(vim.inspect(result), vim.log.levels.INFO, { title = "Elixir" })
+
+local lists = require("config.erlang").module("lists")
+
+local result = lists.reverse({ 1, 2, 3 })
+
+vim.notify(vim.inspect(result), vim.log.levels.INFO, { title = "Erlang" })

@@ -16,7 +16,7 @@
 -type state() :: #state{}.
 
 -export([
-    start_link/1,
+    start_link/0,
     init/1,
     handle_call/3,
     handle_cast/2,
@@ -25,27 +25,37 @@
     code_change/3
 ]).
 
--spec start_link(Transport) -> Result when
-    Transport :: nvim_host_transport:transport(),
+-spec start_link() -> Result when
     Result :: gen_server:start_ret().
-start_link(Transport) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Transport], []).
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 -spec init(Args) -> Result when
-    Args :: [nvim_host_transport:transport()],
+    Args :: term(),
     Result :: {ok, state()} | {stop, term()}.
-init([Transport]) ->
-    case nvim_host_transport:start_link(self(), Transport) of
+init(_Args) ->
+    case nvim_host_transport:start_link(self()) of
         {ok, TransportPid} ->
             Handlers = #{
-                <<"beam.call">> => fun nvim_host_beam:handle_call/1
+                <<"erlang.call">> => fun nvim_host_beam:handle_call/1
             },
+            spawn(fun notify_started/0),
             {ok, #state{
                 transport = TransportPid,
                 handlers = Handlers
             }};
         {error, Reason} ->
             {stop, {transport_start_failed, Reason}}
+    end.
+
+notify_started() ->
+    Options = #{~"title" => ~"Erlang Host"},
+    case nvim:api(nvim_notify, [~"Started Neovim Erlang host", 2, Options]) of
+        {ok, _NotificationId} ->
+            ok;
+        {error, Reason} ->
+            Format = io_lib:format("Could not notify Neovim host-started ~p", [Reason]),
+            logger:error(Format)
     end.
 
 -spec handle_call(Request, From, State) -> Result when

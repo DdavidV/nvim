@@ -8,7 +8,7 @@ defmodule Nvim.Logger do
     # Never let the default handler write protocol-breaking output to stdout.
     :ok = :logger.remove_handler(:default)
     log_dir = :filename.basedir(:user_log, "nvim-beam")
-    log_file = Path.join(log_dir, "server.log")
+    log_file = Path.join(log_dir, "elixir.server.log")
 
     File.mkdir_p!(log_dir)
 
