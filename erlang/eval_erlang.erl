@@ -1,5 +1,5 @@
 
--module(erlang_eval).
+-module(eval_erlang).
 
 -export([run/0]).
 
