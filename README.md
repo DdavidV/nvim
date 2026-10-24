@@ -76,12 +76,12 @@ run() ->
         ~"desc" => ~"Show a notification from Erlang",
         ~"force" => true
     },
-    NvimOptions = nvim_rpc:erlang_to_rpc(Options),
+    NvimOptions = nvim_rpc:term_to_rpc(Options),
     nvim:create_user_command(~"ErlangHello", fun hello/1, NvimOptions).
 
 hello(_CommandOptions) ->
     Args =
-        nvim_rpc:erlang_to_rpc([
+        nvim_rpc:term_to_rpc([
             ~"Hello from Erlang!",
             2,
             #{~"title" => ~"Erlang extension"}

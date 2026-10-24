@@ -36,9 +36,9 @@ invoke_exported(Module, Function, Args) ->
     case erlang:function_exported(Module, Function, Arity) of
         true ->
             try
-                ErlangArgs = [nvim_rpc:rpc_to_erlang(Arg) || Arg <- Args],
+                ErlangArgs = [nvim_rpc:rpc_to_term(Arg) || Arg <- Args],
                 Result = apply(Module, Function, ErlangArgs),
-                {ok, nvim_rpc:erlang_to_rpc(Result)}
+                {ok, nvim_rpc:term_to_rpc(Result)}
             catch
                 Class:Reason:Stack ->
                     logger:error("BEAM function call failed: ~p:~p/~p: ~p:~p~n~p", [

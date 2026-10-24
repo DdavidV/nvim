@@ -194,7 +194,7 @@ defmodule Nvim.Host do
       nil ->
         # Handler not found responde only when request_id is available
         if request_id do
-          error = :nvim_rpc.erlang_to_rpc("method_not_found")
+          error = :nvim_rpc.term_to_rpc("method_not_found")
           send_response(request_id, error, nil, state)
         end
 

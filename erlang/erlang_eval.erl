@@ -11,10 +11,10 @@ run() ->
         ~"desc" => ~"Evaluate an Erlang expression",
         ~"nargs" => ~"+"
     },
-    nvim:create_user_command(~"Erlang", fun command/1, nvim_rpc:erlang_to_rpc(Options)).
+    nvim:create_user_command(~"Erlang", fun command/1, nvim_rpc:term_to_rpc(Options)).
 
 command(CommandOptions) ->
-    Options = nvim_rpc:rpc_to_erlang(CommandOptions),
+    Options = nvim_rpc:rpc_to_term(CommandOptions),
     case maps:get(~"args", Options, undefined) of
         undefined ->
             notify(<<"Could not read Erlang command arguments">>, ?Error);
@@ -73,5 +73,5 @@ notify(Message, Level) ->
         ~"title" => ~"Erlang",
         ~"timeout" => 5000
     },
-    nvim:api(nvim_notify, [{string, Message}, Level, nvim_rpc:erlang_to_rpc(Options)]),
+    nvim:api(nvim_notify, [{string, Message}, Level, nvim_rpc:term_to_rpc(Options)]),
     ok.

@@ -7,7 +7,8 @@ defmodule NvimHost.Application do
     {:ok, :nvim_api} = :nvim_rpc.ensure_api_bindings()
 
     children = [
-      Nvim.Host
+      Nvim.Host,
+      Nvim.Elixir.Extensions
     ]
 
     opts = [strategy: :one_for_one, name: NvimHost.Supervisor]

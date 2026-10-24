@@ -19,8 +19,8 @@
 ]).
 
 -export([
-    rpc_to_erlang/1,
-    erlang_to_rpc/1
+    rpc_to_term/1,
+    term_to_rpc/1
 ]).
 
 -export([
@@ -123,52 +123,52 @@ ensure_api_bindings(NvimExecutable) ->
     nvim_api_codegen:ensure(NvimExecutable).
 
 
--spec rpc_to_erlang(RPCValue) -> Result when
+-spec rpc_to_term(RPCValue) -> Result when
     RPCValue :: term(),
     Result :: term().
-rpc_to_erlang({string, Binary}) when is_binary(Binary) ->
+rpc_to_term({string, Binary}) when is_binary(Binary) ->
     Binary;
-rpc_to_erlang(List) when is_list(List) ->
-    [rpc_to_erlang(Value) || Value <- List];
-rpc_to_erlang(Map) when is_map(Map) ->
+rpc_to_term(List) when is_list(List) ->
+    [rpc_to_term(Value) || Value <- List];
+rpc_to_term(Map) when is_map(Map) ->
     maps:from_list([
-        {rpc_to_erlang(Key), rpc_to_erlang(Value)}
+        {rpc_to_term(Key), rpc_to_term(Value)}
         || {Key, Value} <- maps:to_list(Map)
     ]);
-rpc_to_erlang(Value) ->
+rpc_to_term(Value) ->
     Value.
 
--spec erlang_to_rpc(ErlangTerm) -> Result when
+-spec term_to_rpc(ErlangTerm) -> Result when
     ErlangTerm :: term(),
     Result :: term().
-erlang_to_rpc(undefined) ->
+term_to_rpc(undefined) ->
     nil;
-erlang_to_rpc(nil) ->
+term_to_rpc(nil) ->
     nil;
-erlang_to_rpc(true) ->
+term_to_rpc(true) ->
     true;
-erlang_to_rpc(false) ->
+term_to_rpc(false) ->
     false;
-erlang_to_rpc(Atom) when is_atom(Atom) ->
+term_to_rpc(Atom) when is_atom(Atom) ->
     {string, atom_to_binary(Atom, utf8)};
-erlang_to_rpc({string, Binary}) when is_binary(Binary) ->
+term_to_rpc({string, Binary}) when is_binary(Binary) ->
     {string, Binary};
-erlang_to_rpc({binary, Binary}) when is_binary(Binary) ->
+term_to_rpc({binary, Binary}) when is_binary(Binary) ->
     Binary;
-erlang_to_rpc(Binary) when is_binary(Binary) ->
+term_to_rpc(Binary) when is_binary(Binary) ->
     {string, Binary};
-erlang_to_rpc(Value) when is_integer(Value) orelse is_float(Value) ->
+term_to_rpc(Value) when is_integer(Value) orelse is_float(Value) ->
     Value;
-erlang_to_rpc(List) when is_list(List) ->
-    [erlang_to_rpc(Value) || Value <- List];
-erlang_to_rpc(Tuple) when is_tuple(Tuple) ->
-    [erlang_to_rpc(Value) || Value <- tuple_to_list(Tuple)];
-erlang_to_rpc(Map) when is_map(Map) ->
+term_to_rpc(List) when is_list(List) ->
+    [term_to_rpc(Value) || Value <- List];
+term_to_rpc(Tuple) when is_tuple(Tuple) ->
+    [term_to_rpc(Value) || Value <- tuple_to_list(Tuple)];
+term_to_rpc(Map) when is_map(Map) ->
     maps:from_list([
-        {erlang_to_rpc(Key), erlang_to_rpc(Value)}
+        {term_to_rpc(Key), term_to_rpc(Value)}
         || {Key, Value} <- maps:to_list(Map)
     ]);
-erlang_to_rpc(Value) ->
+term_to_rpc(Value) ->
     error({unsupported_rpc_type, Value}).
 
 -spec encode(Term) -> Result when
