@@ -349,15 +349,20 @@ cache_dir(Hash, ModuleDir) ->
     end.
 
 project_root(Path) ->
-    ConfigPath = filename:join(Path, "rebar.config"),
-    case filelib:is_regular(ConfigPath) of
+    RebarConfig = filename:join(Path, "rebar.config"),
+    MixFile = filename:join(Path, "mix.exs"),
+
+    case filelib:is_regular(RebarConfig) orelse
+         filelib:is_regular(MixFile) of
         true ->
             {ok, Path};
         false ->
             Parent = filename:dirname(Path),
             case Parent =:= Path of
-                true -> error;
-                false -> project_root(Parent)
+                true ->
+                    error;
+                false ->
+                    project_root(Parent)
             end
     end.
 

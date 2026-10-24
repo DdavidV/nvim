@@ -23,6 +23,10 @@ M.beam = {
   scripts_dir = vim.fn.stdpath("config") .. "/erlang",
 }
 
+M.elixir = {
+  scripts_dir = vim.fn.stdpath("config") .. "/elixir"
+}
+
 -- Disable welcome screen
 vim.opt.shortmess:append("I")
 

@@ -1,6 +1,7 @@
 local options = require("config.options")
 require("config.lazy")
-require("config.beam").setup(options.beam)
+-- require("config.beam").setup(options.beam)
+require("config.elixir").setup(options.elixir)
 
 require("config.keymaps")
 
