@@ -4,63 +4,20 @@ nvim_host
 An Erlang/OTP application that connects Erlang extensions to Neovim over MessagePack-RPC.
 It depends on the `nvim_rpc` application for the codec and runtime-generated Neovim API metadata.
 
-## Transports
-
-The default transport is stdio, intended for a Neovim-launched RPC job. RPC bytes use stdin and stdout.
-
-To use a Unix-domain socket instead, configure the application before starting it:
-
-```erlang
-application:set_env(nvim_host, transport, {unix, "/tmp/nvim-erlang-host.sock"}).
-```
-
-The host listens on that path and accepts a Neovim RPC client connection.
-The socket directory is created if needed. The host does not remove an existing socket path when
-startup fails.
-
-Both transports support requests and notifications in both directions. A disconnected Unix-socket
-client may reconnect to the still-running host.
-
 ## Start and use
 
 The host generates or loads the bindings for the selected Neovim executable before starting
-its transport. By default, it resolves `nvim` from `PATH`.
-Override the executable with application configuration:
+its stdio transport.
 
-```erlang
-application:set_env(nvim_host, nvim_executable, "/path/to/nvim").
-application:ensure_all_started(nvim_host).
-```
+The Neovim bootstrap sets `nvim_host.scripts_dir` with `application:set_env/2` before starting the host.
+At application start, the host loads every `.beam` file from that directory's `ebin/` subdirectory.
+The bootstrap compiles `.erl` files from the configured scripts directory before starting the application.
 
-The Neovim bootstrap sets `nvim_host.scripts_dir` with
-`application:set_env/2` before starting the host. At application start, the
-host loads every `.beam` file from that directory's `ebin/` subdirectory and
-invokes `run/0` on modules that export it. The bootstrap compiles `.erl` files
-from the configured scripts directory before starting the application.
+The local Neovim integration uses `rebar3 compile` and launches the Erlang application as a
+foreground RPC job, a Rebar3 release is unnecessary for this development workflow.
 
-The local Neovim integration uses `rebar3 compile` and launches the Erlang
-application as a foreground RPC job; a Rebar3 release is unnecessary for this
-development workflow.
-
-After all configured extensions start, the host shows a Neovim INFO
-notification through the generated `nvim_notify` API and emits Neovim's
-`User ErlangHostStarted` event through `nvim_exec_lua`. The event can be
-observed or customized with a Lua autocmd:
-
-```lua
-vim.api.nvim_create_autocmd("User", {
-  pattern = "ErlangHostStarted",
-  callback = function()
-    vim.notify("My Erlang extensions are ready")
-  end,
-})
-```
-
-Send a request to Neovim; calls default to a five-second timeout:
-
-```erlang
-{ok, CurrentBuffer} = nvim:call(<<"nvim_get_current_buf">>, []).
-```
+After all configured extensions start, the host shows a Neovim INFO notification through the generated
+`nvim_notify`.
 
 `nvim:call` waits for Neovim's RPC response. `nvim:cast/2` instead enqueues an asynchronous,
 one-way notification and returns without waiting for a send result or Neovim response.

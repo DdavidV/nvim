@@ -160,7 +160,7 @@ end
 -- Register all user commands for the BEAM extension host.
 local function register_commands()
   if not M.reload_command_created then
-    vim.api.nvim_create_user_command("BeamReload", M.reload, {
+    vim.api.nvim_create_user_command("ErlangReload", M.reload, {
       desc = "Recompile and restart the BEAM extension host",
     })
     M.reload_command_created = true
