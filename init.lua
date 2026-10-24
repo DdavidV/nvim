@@ -13,16 +13,3 @@ require("ui.cmdline").setup()
 require("ui.statusline").setup()
 require("ui.explorer").setup(options.ui.explorer)
 require("ui.tabs").setup()
-
--- Just of testing
-local List = require("config.elixir").module("Elixir.List")
-
-local result = List.last({ 1, 2, 3 })
-
-vim.notify(vim.inspect(result), vim.log.levels.INFO, { title = "Elixir" })
-
-local lists = require("config.erlang").module("lists")
-
-local result = lists.reverse({ 1, 2, 3 })
-
-vim.notify(vim.inspect(result), vim.log.levels.INFO, { title = "Erlang" })
