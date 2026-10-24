@@ -29,6 +29,14 @@ init(_Args) ->
             shutdown => 5000,
             type => worker,
             modules => [nvim_host_connection]
+        },
+        #{
+            id => nvim_host_extentions,
+            start => {nvim_host_extentions, start_link, []},
+            restart => transient,
+            shutdown => 5000,
+            type => worker,
+            modules => [nvim_host_extentions]
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.
