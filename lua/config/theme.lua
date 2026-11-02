@@ -197,6 +197,7 @@ function M.apply()
     ["@operator"] = "Operator",
     ["@type"] = "Type",
     ["@type.builtin"] = "Type",
+    ["@module"] = "Type",
     ["@attribute"] = "PreProc",
     ["@tag"] = "Tag",
     ["@punctuation.delimiter"] = "Delimiter",

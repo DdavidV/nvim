@@ -9,6 +9,7 @@ otherwise be costly to recreate.
 - **Neovim 0.12.6** the version this configuration currently runs on.
 - **Nerd Font** required to display file and folder icons. JetBrainsMono Nerd Font Mono is one option.
 - **ripgrep (`rg`)** required by Telescope's `live_grep`.
+- **Tree-sitter CLI 0.26.1 or later**, a C compiler, `curl`, and `tar` required to install Tree-sitter parsers.
 - **Erlang/OTP** required by the Erlang and Elixir runtimes.
 - **Rebar3** required to build the Erlang RPC library and host.
 - **Elixir** required to build and run the Elixir extension host.
@@ -21,6 +22,7 @@ Plugin usage is kept minimal and managed with `lazy.nvim`.
 - **lazy.nvim** installs and manages configured plugins.
 - **Telescope** fuzzy finding and search, including file previews.
 - **mini.icons** provides file and folder icons for the custom explorer.
+- **nvim-treesitter** installs parsers and supplies highlighting queries.
 - **plenary.nvim** a dependency required by Telescope.
 
 ## Project Structure
