@@ -1,5 +1,6 @@
 local M = {}
 local notified_clients = {}
+local reference_preview_namespace = vim.api.nvim_create_namespace("LspReferencePreview")
 
 -- Install common navigation, completion, and connection feedback on attach.
 local function setup_keymaps()
@@ -21,9 +22,14 @@ local function setup_keymaps()
         )
       end
 
+      -- Jump to the symbol's definition or declaration.
       vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
       vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-      vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+      -- Search references with Telescope so results are previewable and selectable.
+      vim.keymap.set("n", "gr", function()
+        M.references()
+      end, opts)
+      -- Show hover documentation, rename a symbol, or request code actions.
       vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
       vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
       vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
@@ -31,6 +37,137 @@ local function setup_keymaps()
       vim.lsp.completion.enable(true, client_id, bufnr, { autotrigger = true })
     end,
   })
+end
+
+local function make_reference_picker(locations)
+  local pickers = require("telescope.pickers")
+  local finders = require("telescope.finders")
+  local config = require("telescope.config").values
+  local previewers = require("telescope.previewers")
+  local actions = require("telescope.actions")
+  local action_state = require("telescope.actions.state")
+
+  table.sort(locations, function(left, right)
+    if left.filename == right.filename then
+      return left.lnum < right.lnum
+    end
+    return left.filename < right.filename
+  end)
+
+  pickers.new({}, {
+    prompt_title = "LSP References",
+    finder = finders.new_table({
+      results = locations,
+      entry_maker = function(location)
+        local filename = vim.fs.basename(location.filename)
+        local text = vim.trim(location.text or "")
+        return {
+          value = location,
+          display = ("%s:%d:%d  %s"):format(filename, location.lnum, location.col, text),
+          ordinal = table.concat({ location.filename, location.lnum, text }, " "),
+        }
+      end,
+    }),
+    sorter = config.generic_sorter({}),
+    previewer = previewers.new_buffer_previewer({
+      title = "Reference Context",
+      define_preview = function(self, entry)
+        local location = entry.value
+        local bufnr = vim.fn.bufadd(location.filename)
+        vim.fn.bufload(bufnr)
+        local line_count = vim.api.nvim_buf_line_count(bufnr)
+        local target = math.max(0, math.min(location.lnum - 1, line_count - 1))
+        local first = math.max(0, target - 10)
+        local last = math.min(line_count, target + 11)
+        local source_lines = vim.api.nvim_buf_get_lines(bufnr, first, last, false)
+        local preview_lines = {}
+        for index, text in ipairs(source_lines) do
+          local line_number = first + index
+          local marker = line_number == location.lnum and ">" or " "
+          preview_lines[#preview_lines + 1] = ("%s %4d  %s"):format(marker, line_number, text)
+        end
+        vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview_lines)
+        vim.api.nvim_buf_clear_namespace(self.state.bufnr, reference_preview_namespace, 0, -1)
+        vim.api.nvim_buf_add_highlight(
+          self.state.bufnr,
+          reference_preview_namespace,
+          "Search",
+          target - first,
+          0,
+          -1
+        )
+      end,
+    }),
+    attach_mappings = function(prompt_bufnr)
+      actions.select_default:replace(function()
+        local selection = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        if selection and selection.value then
+          local location = selection.value
+          vim.cmd.edit(vim.fn.fnameescape(location.filename))
+          vim.api.nvim_win_set_cursor(0, { location.lnum, math.max(0, location.col - 1) })
+        end
+      end)
+      return true
+    end,
+  }):find()
+end
+
+-- Query each supporting client with its negotiated encoding, then show all results.
+function M.references(bufnr, winid)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  winid = winid or vim.api.nvim_get_current_win()
+  local method = "textDocument/references"
+  local clients = vim.lsp.get_clients({ bufnr = bufnr })
+  local supporting = {}
+  for _, client in ipairs(clients) do
+    if client:supports_method(method, bufnr) then
+      supporting[#supporting + 1] = client
+    end
+  end
+
+  if #supporting == 0 then
+    vim.notify("No attached LSP client supports references for this buffer.", vim.log.levels.INFO, {
+      title = "LSP references",
+    })
+    return
+  end
+
+  local pending = #supporting
+  local locations = {}
+  local finished = false
+  local function finish_one()
+    pending = pending - 1
+    if pending == 0 and not finished then
+      finished = true
+      if #locations == 0 then
+        vim.notify("No references found.", vim.log.levels.INFO, { title = "LSP references" })
+      else
+        make_reference_picker(locations)
+      end
+    end
+  end
+
+  for _, client in ipairs(supporting) do
+    local params = vim.lsp.util.make_position_params(winid, client.offset_encoding)
+    params.context = { includeDeclaration = true }
+    local sent = client:request(method, params, function(err, result)
+      if not err and result then
+        for _, location in ipairs(result) do
+          local items = vim.lsp.util.locations_to_items({ location }, client.offset_encoding)
+          if items and items[1] then
+            items[1].client_name = client.name
+            locations[#locations + 1] = items[1]
+          end
+        end
+      end
+      finish_one()
+    end, bufnr)
+
+    if not sent then
+      finish_one()
+    end
+  end
 end
 
 -- Load each configured client module through the shared setup contract.
