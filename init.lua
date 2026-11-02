@@ -7,9 +7,9 @@ require("config.keymaps")
 
 require("config.theme").apply()
 
-require("event.notify").setup()
-require("ui.notification").setup(options.ui.notification)
+require("event").setup(options.ui)
 require("ui.cmdline").setup()
 require("ui.statusline").setup()
 require("ui.explorer").setup(options.ui.explorer)
 require("ui.tabs").setup()
+require("config.lsp").setup(options.lsp)

@@ -9,6 +9,7 @@ otherwise be costly to recreate.
 - **Neovim 0.12.6** the version this configuration currently runs on.
 - **Nerd Font** required to display file and folder icons. JetBrainsMono Nerd Font Mono is one option.
 - **ripgrep (`rg`)** required by Telescope's `live_grep`.
+- **`curl`, `jq`, `unzip`, and `tar`** required by the language-server setup scripts.
 - **Tree-sitter CLI 0.26.1 or later**, a C compiler, `curl`, and `tar` required to install Tree-sitter parsers.
 - **Erlang/OTP** required by the Erlang and Elixir runtimes.
 - **Rebar3** required to build the Erlang RPC library and host.
@@ -49,10 +50,19 @@ Plugin usage is kept minimal and managed with `lazy.nvim`.
 
 `init.lua` loads the configuration modules. Plugin versions are recorded in `lazy-lock.json`.
 
-The Erlang and Elixir hosts run as separate Neovim RPC jobs.
-Their compiled extension modules are stored in each scripts directory's `ebin/` subdirectory.
+## Language Servers
+
+Install ElixirLS and ELP:
+
+```sh
+bash scripts/setup_elixir_ls.sh
+bash scripts/setup_elp.sh
+```
 
 ## Extension Hosts
+
+The Erlang and Elixir hosts run as separate Neovim RPC jobs.
+Their compiled extension modules are stored in each scripts directory's `ebin/` subdirectory.
 
 The configuration provides two BEAM-powered extension hosts:
 

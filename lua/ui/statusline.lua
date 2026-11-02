@@ -107,7 +107,8 @@ function M.render()
 
   -- Statusline format codes select highlights; %= pushes following items to the right.
   local left = {
-    "%#" .. (mode_highlights[mode_name] or "StatusLineModeNormal") .. "# " .. mode_name .. " ",
+    "%#" .. (mode_highlights[mode_name] or "StatusLineModeNormal") .. "#"
+      .. " " .. mode_name .. " ",
   }
 
   if branch then
@@ -125,7 +126,7 @@ function M.render()
     right[#right + 1] = "%#StatusLineMeta# " .. statusline_escape(filetype) .. " "
   end
 
-  right[#right + 1] = "%#StatusLinePosition# " .. progress_label(line, line_count) .. " "
+  right[#right + 1] = "%#StatusLinePosition# " .. statusline_escape(progress_label(line, line_count)) .. " "
   right[#right + 1] = "%#StatusLinePosition# " .. line .. ":" .. (cursor[2] + 1) .. " "
 
   return table.concat(left) .. "%=" .. table.concat(right)

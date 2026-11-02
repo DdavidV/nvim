@@ -32,6 +32,7 @@ M.kinds = {
 }
 
 local message_levels = {
+  [M.kinds.echomsg] = vim.log.levels.INFO,
   [M.kinds.emsg] = vim.log.levels.ERROR,
   [M.kinds.echoerr] = vim.log.levels.ERROR,
   [M.kinds.lua_error] = vim.log.levels.ERROR,

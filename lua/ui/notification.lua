@@ -4,6 +4,7 @@ local defaults = {
   timeout = 5000,
   max_width = 60,
   gap = 1,
+  scale = 1,
 }
 
 local config = vim.deepcopy(defaults)
@@ -33,7 +34,8 @@ local function make_lines(entry)
   for _, line in ipairs(body) do
     width = math.max(width, vim.fn.strdisplaywidth(line))
   end
-  width = math.min(width, config.max_width, math.max(1, vim.o.columns - 4))
+  local max_width = math.max(24, math.floor(config.max_width * config.scale))
+  width = math.min(width, max_width, math.max(1, vim.o.columns - 4))
 
   local title_width = math.max(0, width - vim.fn.strdisplaywidth("● ") - vim.fn.strdisplaywidth(timestamp) - 1)
   local visible_title = ""
@@ -61,7 +63,8 @@ local function make_lines(entry)
   for _, line in ipairs(lines) do
     height = height + math.max(1, math.ceil(vim.fn.strdisplaywidth(line) / width))
   end
-  height = math.min(height, math.max(1, vim.o.lines - 4))
+  local height_limit = math.max(3, math.floor((vim.o.lines - 4) * config.scale))
+  height = math.min(height, height_limit)
   return lines, width, height
 end
 
@@ -108,7 +111,7 @@ local function render()
     vim.wo[entry.win].linebreak = true
     vim.wo[entry.win].winhighlight =
       "Normal:ThemeNotifyFloat,FloatBorder:" .. entry.level.highlight
-    row = row + height + config.gap
+    row = row + height + math.max(0, math.floor(config.gap * config.scale))
   end
   vim.cmd.redraw()
 end
@@ -184,6 +187,8 @@ function M.setup(options)
   assert(type(config.timeout) == "number" and config.timeout >= 0, "notification timeout must be a non-negative number")
   assert(type(config.max_width) == "number" and config.max_width >= 1, "notification max_width must be positive")
   assert(type(config.gap) == "number" and config.gap >= 0, "notification gap must be non-negative")
+  assert(type(config.scale) == "number" and config.scale > 0 and config.scale <= 1,
+    "notification scale must be greater than 0 and at most 1")
 
   local group = vim.api.nvim_create_augroup("NativeNotifications", { clear = true })
   vim.api.nvim_create_autocmd("VimResized", {

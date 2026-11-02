@@ -8,6 +8,10 @@ vim.g.loaded_netrwPlugin = 1
 -- Notification UI defaults
 M.ui = {
   notification = {
+    scale = 0.85, -- Compact notification sizing; 1.0 is the normal size.
+    statusbar = {
+      scale = 0.85, -- Compact statusbar spacing; 1.0 shows all metadata.
+    },
     timeout = 5000, -- default timeout for notifications in milliseconds
     max_width = 100, -- maximum width of notification in columns
     gap = 2, -- gap between notifications in lines
@@ -25,6 +29,14 @@ M.erlang = {
 
 M.elixir = {
   scripts_dir = vim.fn.stdpath("config") .. "/elixir"
+}
+
+-- Filetypes that are allowed to start each language server.
+M.lsp = {
+  filetypes = {
+    elixirls = { "elixir", "eelixir", "heex", "surface" },
+    elp = { "erlang" },
+  },
 }
 
 -- Disable welcome screen
