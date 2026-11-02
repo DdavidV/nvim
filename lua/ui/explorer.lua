@@ -191,7 +191,7 @@ local function node_at_cursor()
   return state.nodes[line]
 end
 
-local function open_node(node)
+local function open_node(node, preview)
   node = node or node_at_cursor()
   if not node then
     return
@@ -227,11 +227,7 @@ local function open_node(node)
 
   state.editor_window = editor_window
   local bufnr = vim.fn.bufadd(path)
-  vim.fn.bufload(bufnr)
-  -- Make explorer-opened files participate in the editor's persistent tabline.
-  vim.bo[bufnr].buflisted = true
-  vim.api.nvim_win_set_buf(editor_window, bufnr)
-  require("ui.tabs").track(editor_window, bufnr)
+  require("ui.tabs").open_in_window(editor_window, bufnr, preview)
   require("ui.tabs").update_window_ui(editor_window)
 end
 
@@ -253,7 +249,7 @@ local function click_node()
       return
     end
     vim.api.nvim_win_set_cursor(state.window, { row, 0 })
-    open_node(node)
+    open_node(node, true)
   end)
 end
 
@@ -302,8 +298,11 @@ local function create_buffer()
     })
   end
 
-  map("<CR>", open_node, "Open file or toggle directory")
-  map("o", open_node, "Open file or toggle directory")
+  local function open_preview()
+    open_node(nil, true)
+  end
+  map("<CR>", open_preview, "Preview file or toggle directory")
+  map("o", open_preview, "Preview file or toggle directory")
   map("R", render, "Refresh explorer")
   map("q", M.close, "Close explorer")
   map("<LeftRelease>", click_node, "Open or toggle clicked entry")

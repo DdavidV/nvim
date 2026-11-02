@@ -80,6 +80,8 @@ function M.apply()
     VertSplit = { fg = p.selection },
     TabLine = { fg = p.muted, bg = p.surface },
     TabLineSel = { fg = p.foreground, bg = p.background, bold = true },
+    TabLinePreview = { fg = p.muted, bg = p.surface, italic = true },
+    TabLinePreviewSel = { fg = p.foreground, bg = p.background, bold = true, italic = true },
     TabLineClose = { fg = p.muted, bg = p.surface },
     TabLineCloseSel = { fg = p.muted, bg = p.background },
     WinBar = { fg = p.muted, bg = p.surface },

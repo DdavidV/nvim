@@ -17,6 +17,11 @@ map("n", "<A-Right>", function()
   require("ui.tabs").move(1)
 end, { desc = "Next editor tab" })
 
+-- Pin the current editor tab to prevent it from being closed.
+map("n", "<A-p>", function()
+  require("ui.tabs").pin_current()
+end, { desc = "Pin editor tab" })
+
 -- Close the current editor tab.
 map("n", "<A-w>", function()
   require("ui.tabs").close_current()

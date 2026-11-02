@@ -103,6 +103,13 @@ local function add_buffer(winid, bufnr)
   buffers[#buffers + 1] = bufnr
 end
 
+local function pin_preview(winid)
+  local entry = state.windows[winid]
+  if entry then
+    entry.preview = nil
+  end
+end
+
 local function window_buffers(winid)
   local entry = window_state(winid)
   local active = vim.api.nvim_win_get_buf(winid)
@@ -153,7 +160,11 @@ function M.render(winid)
 
   for index, bufnr in ipairs(buffers) do
     local selected = bufnr == active_buffer
-    local highlight = selected and "TabLineSel" or "TabLine"
+    local entry = state.windows[winid]
+    local preview = entry and entry.preview == bufnr
+    local highlight = preview
+        and (selected and "TabLinePreviewSel" or "TabLinePreview")
+      or (selected and "TabLineSel" or "TabLine")
     local label = escape_statusline(buffer_label(bufnr))
     local modified = vim.bo[bufnr].modified and " [+]" or ""
     -- Encode the target window and tab index so clicks act on the bar that was clicked.
@@ -413,10 +424,57 @@ function M.open_in_other_window(direction)
 end
 
 function M.track(winid, bufnr)
-  add_buffer(winid, bufnr or vim.api.nvim_win_get_buf(winid))
-  if is_editor_window(winid) then
-    state.editor_window = winid
+  if not is_editor_window(winid) then
+    return
   end
+
+  bufnr = bufnr or vim.api.nvim_win_get_buf(winid)
+  add_buffer(winid, bufnr)
+  state.editor_window = winid
+end
+
+function M.pin_current()
+  local winid = editor_window()
+  if not winid then
+    return false
+  end
+
+  local entry = state.windows[winid]
+  if not entry or entry.preview ~= vim.api.nvim_win_get_buf(winid) then
+    return false
+  end
+
+  pin_preview(winid)
+  redraw_tabs()
+  return true
+end
+
+function M.open_in_window(winid, bufnr, preview)
+  if not is_editor_window(winid) or not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  local entry = window_state(winid)
+  local previous_preview = entry.preview
+  if preview and previous_preview ~= bufnr then
+    if previous_preview and vim.api.nvim_buf_is_valid(previous_preview)
+        and not vim.bo[previous_preview].modified then
+      remove_window_buffer(winid, previous_preview)
+    end
+    if vim.bo[bufnr].modified then
+      entry.preview = nil
+    else
+      entry.preview = bufnr
+    end
+  elseif not preview or vim.bo[bufnr].modified then
+    pin_preview(winid)
+  end
+
+  vim.fn.bufload(bufnr)
+  vim.bo[bufnr].buflisted = true
+  add_buffer(winid, bufnr)
+  vim.api.nvim_win_set_buf(winid, bufnr)
+  state.editor_window = winid
 end
 
 function M.update_window_ui(winid)
@@ -519,6 +577,16 @@ function M.setup()
       vim.schedule(function()
         redraw_tabs()
       end)
+    end,
+  })
+  vim.api.nvim_create_autocmd("BufModifiedSet", {
+    group = group,
+    callback = function(event)
+      for winid, entry in pairs(state.windows) do
+        if entry.preview == event.buf and vim.bo[event.buf].modified then
+          pin_preview(winid)
+        end
+      end
     end,
   })
 end
