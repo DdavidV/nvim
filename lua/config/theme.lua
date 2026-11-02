@@ -4,6 +4,7 @@ local M = {}
 M.palette = {
   background = "#14161b", -- Main editor background
   surface = "#1b1e26", -- Elevated surfaces such as menus and cursor line
+  colorcolumn = "#191c22", -- Subtle maximum line length guide
   foreground = "#d8dee9", -- Primary text
   muted = "#778092", -- Secondary text and inactive UI
   border = "#c9ced8", -- Float and separator outlines
@@ -44,7 +45,7 @@ function M.apply()
     LineNr = { fg = p.muted },
     CursorLineNr = { fg = p.accent, bold = true },
     SignColumn = { fg = p.muted, bg = p.background },
-    ColorColumn = { bg = p.surface },
+    ColorColumn = { bg = p.colorcolumn },
     Visual = { bg = p.selection },
 
     -- Search matches and matching delimiters

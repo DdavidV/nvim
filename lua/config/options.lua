@@ -41,6 +41,8 @@ opt.smoothscroll = true
 
 -- Show the current line number
 opt.number = true
+-- Mark the preferred maximum line length.
+opt.colorcolumn = "120"
 
 -- Insert spaces when you press Tab
 opt.expandtab = true
@@ -48,6 +50,17 @@ opt.expandtab = true
 opt.shiftwidth = 2
 -- Display a Tab character as two spaces wide
 opt.tabstop = 2
+-- Show guides in leading indentation without marking other whitespace.
+opt.list = true
+opt.listchars = {
+  leadmultispace = "│ ",
+  eol = " ",
+  tab = "  ",
+  trail = " ",
+  nbsp = " ",
+  extends = " ",
+  precedes = " ",
+}
 -- Automatically indent new lines in common cases
 opt.smartindent = true
 

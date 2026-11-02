@@ -336,6 +336,7 @@ function M.open()
   vim.wo[state.window].signcolumn = "no"
   vim.wo[state.window].foldcolumn = "0"
   vim.wo[state.window].wrap = false
+  vim.wo[state.window].list = false
   -- Show the selection while the explorer has keyboard focus.
   vim.wo[state.window].cursorline = true
 
