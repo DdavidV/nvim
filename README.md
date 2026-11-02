@@ -21,6 +21,7 @@ Plugin usage is kept minimal and managed with `lazy.nvim`.
 
 - **lazy.nvim** installs and manages configured plugins.
 - **Telescope** fuzzy finding and search, including file previews.
+- **Gitsigns** displays added, changed, and deleted lines in the sign column.
 - **mini.icons** provides file and folder icons for the custom explorer.
 - **nvim-treesitter** installs parsers and supplies highlighting queries.
 - **plenary.nvim** a dependency required by Telescope.

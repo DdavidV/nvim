@@ -15,10 +15,13 @@ local state = {
   buffer = nil,
   window = nil,
   editor_window = nil,
+  git_status = {},
+  git_status_request = 0,
 }
 
 local namespace = vim.api.nvim_create_namespace("HandRolledExplorer")
 local resize_check_timer
+local render
 
 local function cancel_resize_check()
   if resize_check_timer then
@@ -40,6 +43,131 @@ local function set_buffer_lines(lines)
   vim.bo[state.buffer].modifiable = true
   vim.api.nvim_buf_set_lines(state.buffer, 0, -1, false, lines)
   vim.bo[state.buffer].modifiable = false
+end
+
+local function status_highlight(status)
+  if status.untracked then
+    return "ExplorerGitUntracked"
+  end
+  return "ExplorerGitModified"
+end
+
+local function merge_git_status(path, status)
+  local current = state.git_status[path] or { untracked = false, modified = false }
+  current[status == "U" and "untracked" or "modified"] = true
+  state.git_status[path] = current
+end
+
+local function status_marker(status)
+  if not status then
+    return ""
+  end
+
+  local markers = {}
+  if status.untracked then
+    markers[#markers + 1] = "U"
+  end
+  if status.modified then
+    markers[#markers + 1] = "M"
+  end
+  return "  " .. table.concat(markers, " ")
+end
+
+local function add_status_highlights(highlights, line, name_start, name_length, status)
+  if not status then
+    return
+  end
+
+  highlights[#highlights + 1] = {
+    group = status_highlight(status),
+    line = line,
+    start_col = name_start,
+    end_col = name_start + name_length,
+  }
+
+  local marker_col = name_start + name_length + 2
+  if status.untracked then
+    highlights[#highlights + 1] = {
+      group = "ExplorerGitUntracked",
+      line = line,
+      start_col = marker_col,
+      end_col = marker_col + 1,
+    }
+    marker_col = marker_col + 2
+  end
+  if status.modified then
+    highlights[#highlights + 1] = {
+      group = "ExplorerGitModified",
+      line = line,
+      start_col = marker_col,
+      end_col = marker_col + 1,
+    }
+  end
+end
+
+local function parse_git_status(root, output)
+  state.git_status = {}
+  local entries = vim.split(output, "\0", { plain = true, trimempty = true })
+  local index = 1
+
+  while index <= #entries do
+    local entry = entries[index]
+    local status = entry:sub(1, 2)
+    local path = entry:sub(4)
+    local marker
+    if status == "??" then
+      marker = "U"
+    elseif status:find("[^ ]") then
+      marker = "M"
+    end
+
+    if marker and path ~= "" then
+      local absolute_path = normalize(vim.fs.joinpath(root, path))
+      merge_git_status(absolute_path, marker)
+
+      local parent = vim.fs.dirname(absolute_path)
+      while parent and parent ~= absolute_path do
+        merge_git_status(parent, marker)
+        if parent == root then
+          break
+        end
+        absolute_path, parent = parent, vim.fs.dirname(parent)
+      end
+    end
+
+    index = index + ((status:find("[RC]")) and 2 or 1)
+  end
+end
+
+local function refresh_git_status()
+  if not state.root or vim.fn.executable("git") ~= 1 then
+    return
+  end
+
+  local root = state.root
+  state.git_status_request = state.git_status_request + 1
+  local request = state.git_status_request
+  vim.system({
+    "git",
+    "-C",
+    root,
+    "status",
+    "--porcelain=v1",
+    "-z",
+    "--untracked-files=all",
+  }, { text = true }, function(result)
+    vim.schedule(function()
+      if request ~= state.git_status_request or root ~= state.root then
+        return
+      end
+      if result.code == 0 then
+        parse_git_status(root, result.stdout)
+      else
+        state.git_status = {}
+      end
+      render()
+    end)
+  end)
 end
 
 local function directory_entries(path)
@@ -74,6 +202,8 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
   local name = vim.fs.basename(path)
   local directory = is_directory(path)
   local expanded = directory and state.expanded[path]
+  local status = state.git_status[normalize(path)]
+  local marker = status_marker(status)
   local prefix = {}
   for _, ancestor_is_last_entry in ipairs(ancestor_is_last) do
     prefix[#prefix + 1] = ancestor_is_last_entry and "  " or "│ "
@@ -87,7 +217,7 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
     icon, icon_highlight = MiniIcons.get("file", path)
   end
   local connector = table.concat(prefix)
-  lines[#lines + 1] = connector .. icon .. " " .. name
+  lines[#lines + 1] = connector .. icon .. " " .. name .. marker
   -- Map each rendered row back to its filesystem entry for keyboard and mouse actions.
   state.nodes[#lines] = { path = path, directory = directory }
   highlights[#highlights + 1] = {
@@ -106,6 +236,13 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
     start_col = #connector,
     end_col = #connector + #icon,
   }
+  add_status_highlights(
+    highlights,
+    #lines - 1,
+    #connector + #icon + 1,
+    #name,
+    status
+  )
 
   if not expanded then
     return
@@ -128,7 +265,7 @@ local function add_entry(path, depth, ancestor_is_last, is_last, lines, highligh
   end
 end
 
-local function render()
+render = function()
   if not state.buffer or not vim.api.nvim_buf_is_valid(state.buffer) then
     return
   end
@@ -144,8 +281,11 @@ local function render()
   vim.api.nvim_buf_clear_namespace(state.buffer, namespace, 0, -1)
   local root_name = vim.fs.basename(state.root)
   local root_icon, root_icon_highlight = MiniIcons.get("directory", state.root)
-  local lines = { root_icon .. " " .. root_name }
+  local root_status = state.git_status[state.root]
+  local root_marker = status_marker(root_status)
+  local lines = { root_icon .. " " .. root_name .. root_marker }
   local highlights = { { group = "ExplorerRoot", line = 0 } }
+  add_status_highlights(highlights, 0, #root_icon + 1, #root_name, root_status)
   highlights[#highlights + 1] = {
     group = root_icon_highlight,
     line = 0,
@@ -303,7 +443,7 @@ local function create_buffer()
   end
   map("<CR>", open_preview, "Preview file or toggle directory")
   map("o", open_preview, "Preview file or toggle directory")
-  map("R", render, "Refresh explorer")
+  map("R", refresh_git_status, "Refresh explorer")
   map("q", M.close, "Close explorer")
   map("<LeftRelease>", click_node, "Open or toggle clicked entry")
   local function prevent_split()
@@ -341,6 +481,7 @@ function M.open()
   vim.wo[state.window].cursorline = true
 
   render()
+  refresh_git_status()
   vim.api.nvim_set_current_win(state.window)
 end
 
@@ -444,6 +585,19 @@ function M.setup(options)
   vim.api.nvim_create_autocmd("WinResized", {
     group = group,
     callback = schedule_resize_check,
+  })
+  vim.api.nvim_create_autocmd({ "BufWritePost", "FocusGained" }, {
+    group = group,
+    callback = function()
+      if state.window and vim.api.nvim_win_is_valid(state.window) then
+        refresh_git_status()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd("User", {
+    group = group,
+    pattern = "GitSignsUpdate",
+    callback = refresh_git_status,
   })
   vim.api.nvim_create_autocmd("WinClosed", {
     group = group,
