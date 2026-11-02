@@ -31,11 +31,16 @@ M.elixir = {
   scripts_dir = vim.fn.stdpath("config") .. "/elixir"
 }
 
--- Filetypes that are allowed to start each language server.
+-- Client modules listed here are loaded by the generic LSP coordinator.
 M.lsp = {
-  filetypes = {
-    elixirls = { "elixir", "eelixir", "heex", "surface" },
-    elp = { "erlang" },
+  clients = { "elixirls", "elp" },
+  servers = {
+    elixirls = {
+      filetypes = { "elixir", "eelixir", "heex", "surface" },
+    },
+    elp = {
+      filetypes = { "erlang" },
+    },
   },
 }
 

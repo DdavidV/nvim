@@ -43,6 +43,8 @@ Plugin usage is kept minimal and managed with `lazy.nvim`.
     │   ├── erlang.lua        # Builds and manages the Erlang host
     │   └── elixir.lua        # Builds and manages the Elixir host
     ├── event/                # Event and notification handling
+    ├── lsp/                  # Generic LSP setup and pluggable client modules
+    │   └── clients/          # ElixirLS, ELP, and other language clients
     ├── plugins/              # Plugin specifications
     ├── ui/                   # Custom explorer, tabs, statusline, and other UI
     └── utils/                # Shared helpers
@@ -58,6 +60,21 @@ Install ElixirLS and ELP:
 bash scripts/setup_elixir_ls.sh
 bash scripts/setup_elp.sh
 ```
+
+The generic LSP coordinator is `lua/lsp/init.lua`.
+Enabled clients are listed in `options.lsp.clients`, each client has an independent module under
+`lua/lsp/clients/` that registers its command, filetypes, and root detection.
+
+Per-client options, such as trigger filetypes, can be set under `options.lsp.servers`.
+To switch servers, add a client module implementing `setup(options)` and list its name in
+`options.lsp.clients`.
+
+Edit these settings in `lua/config/options.lua`.
+
+### Commands
+
+- `:LspStatus` shows which clients are attached to the current buffer and their project roots.
+- `:LspClients` opens a searchable Telescope picker of running clients.
 
 ## Extension Hosts
 
