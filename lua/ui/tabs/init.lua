@@ -1,5 +1,5 @@
 local M = {}
-local close_glyph = "󰅖"
+local TabsView = require("ui.tabs.view")
 
 local state = {
   editor_window = nil,
@@ -9,17 +9,9 @@ local state = {
   window_options = {},
 }
 
--- Keep window and tab indices in separate ranges for the statusline click handler.
-local click_base = 100000
-
 local function redraw_tabs()
   -- Winbars are statuslines, so redraw them even in windows that are not focused.
   vim.cmd("redrawstatus!")
-end
-
-local function escape_statusline(value)
-  -- Percent signs are statusline directives; escape filename text before rendering.
-  return tostring(value):gsub("%%", "%%%%"):gsub("[\r\n]", " ")
 end
 
 local function is_empty_unnamed_buffer(bufnr)
@@ -128,10 +120,7 @@ end
 
 local function buffer_label(bufnr)
   local name = vim.api.nvim_buf_get_name(bufnr)
-  if name == "" then
-    return "[No Name]"
-  end
-  return vim.fs.basename(name)
+  return name == "" and "[No Name]" or vim.fs.basename(name)
 end
 
 local function set_editor_buffer(winid, bufnr)
@@ -145,67 +134,16 @@ local function set_editor_buffer(winid, bufnr)
   add_buffer(winid, bufnr)
 end
 
-function M.render(winid)
-  winid = winid or vim.api.nvim_get_current_win()
-  if not is_editor_window(winid) then
-    return ""
-  end
-
-  local buffers = window_buffers(winid)
-  if #buffers == 0 then
-    return ""
-  end
-  local active_buffer = vim.api.nvim_win_get_buf(winid)
-  local parts = {}
-
-  for index, bufnr in ipairs(buffers) do
-    local selected = bufnr == active_buffer
-    local entry = state.windows[winid]
-    local preview = entry and entry.preview == bufnr
-    local highlight = preview
-        and (selected and "TabLinePreviewSel" or "TabLinePreview")
-      or (selected and "TabLineSel" or "TabLine")
-    local label = escape_statusline(buffer_label(bufnr))
-    local modified = vim.bo[bufnr].modified and " [+]" or ""
-    -- Encode the target window and tab index so clicks act on the bar that was clicked.
-    local select_id = winid * click_base + index
-    local close_id = winid * click_base + click_base / 2 + index
-
-    parts[#parts + 1] = "%#" .. highlight .. "#"
-      .. "%" .. select_id .. "@v:lua.NvimHandRolledTabsClick@"
-      .. " " .. label .. modified .. " "
-      .. "%T"
-      .. "%#" .. (selected and "TabLineCloseSel" or "TabLineClose") .. "#"
-      .. "%" .. close_id .. "@v:lua.NvimHandRolledTabsClick@"
-      .. " " .. close_glyph .. " "
-      .. "%T"
-  end
-
-  parts[#parts + 1] = "%#TabLineFill#%T"
-  return table.concat(parts)
-end
-
-function M.click(click_id)
-  local winid = math.floor(click_id / click_base)
-  local index = click_id % click_base
-  local close_click = index >= click_base / 2
-  if close_click then
-    index = index - click_base / 2
-  end
-
-  if not is_editor_window(winid) then
-    return
-  end
-
-  local bufnr = window_buffers(winid)[index]
-  if bufnr then
-    if close_click then
-      M.close_window_tab(winid, bufnr)
-    else
-      set_editor_buffer(winid, bufnr)
-    end
-  end
-end
+local view = TabsView.new(state, {
+  is_editor_window = is_editor_window,
+  window_buffers = window_buffers,
+  set_editor_buffer = set_editor_buffer,
+  close_window_tab = function(winid, bufnr)
+    return M.close_window_tab(winid, bufnr)
+  end,
+})
+M.render = view.render
+M.click = view.click
 
 local function remove_window_buffer(winid, bufnr)
   local entry = state.windows[winid]
@@ -265,6 +203,11 @@ function M.close_window_tab(winid, bufnr)
   -- Closing the active tab selects the next local tab, wrapping at the list end.
   if #buffers > 1 and target_index then
     replacement = buffers[target_index % #buffers + 1]
+  end
+
+  if vim.bo[bufnr].modified and not buffer_in_other_window(winid, bufnr) then
+    vim.notify(("Cannot close %s: buffer has unsaved changes"):format(name), vim.log.levels.WARN)
+    return false
   end
 
   local active = vim.api.nvim_win_get_buf(winid) == bufnr
@@ -484,7 +427,6 @@ function M.update_window_ui(winid)
   end
 
   local bufnr = vim.api.nvim_win_get_buf(winid)
-  -- A per-window winbar avoids taking a full-width row from the explorer.
   if vim.bo[bufnr].filetype == "native-explorer" or is_empty_editor(bufnr) then
     vim.wo[winid].winbar = ""
   else
@@ -515,10 +457,7 @@ function M.update_window_ui(winid)
 end
 
 function M.setup()
-  -- A per-window winbar keeps tabs above the editor without reserving a
-  -- full-width row over the explorer.
   vim.o.showtabline = 0
-
   _G.NvimHandRolledTabsClick = M.click
 
   local group = vim.api.nvim_create_augroup("HandRolledTabs", { clear = true })
@@ -549,7 +488,6 @@ function M.setup()
   vim.api.nvim_create_autocmd("BufDelete", {
     group = group,
     callback = function(event)
-      -- Remove a deleted buffer from every split's independent tab list.
       for _, entry in pairs(state.windows) do
         for index = #entry.buffers, 1, -1 do
           if entry.buffers[index] == event.buf then
@@ -566,7 +504,6 @@ function M.setup()
     group = group,
     callback = function(event)
       local winid = tonumber(event.match)
-      -- Window IDs can be reused, so discard all state associated with a closed one.
       state.windows[winid] = nil
       state.window_options[winid] = nil
     end,
